@@ -15,9 +15,10 @@ function requireEnv(name: string): string {
 const apiConfig: APIConfig = {
   apiKey: requireEnv('DEEPSEEK_API_KEY'),
   baseUrl: process.env.DEEPSEEK_API_BASE_URL || 'https://api.deepseek.com',
-  model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+  model: 'deepseek-reasoner',  // Always use the reasoner model
   maxRetries: parseInt(process.env.DEEPSEEK_MAX_RETRIES || '3', 10),
   timeout: parseInt(process.env.DEEPSEEK_TIMEOUT || '30000', 10),
+  maxTokens: parseInt(process.env.DEEPSEEK_MAX_TOKENS || '4096', 10),  // Default to 4K tokens for final response
 };
 
 export const config: ServerConfig = {

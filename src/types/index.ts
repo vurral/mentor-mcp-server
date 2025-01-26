@@ -18,11 +18,13 @@ export interface ToolContent {
 
 export interface ToolResponse {
   content: ToolContent[];
+  reasoning?: ToolContent[];  // Added to expose reasoning content
   isError?: boolean;
 }
 
 export interface LLMResponse {
   text: string;
+  reasoning?: string;  // Added for Chain of Thought content
   isError: boolean;
   errorMessage?: string;
 }
@@ -38,6 +40,7 @@ export interface APIConfig {
   model: string;
   maxRetries: number;
   timeout: number;
+  maxTokens?: number;  // Added for deepseek-reasoner max_tokens parameter
 }
 
 export interface ServerConfig {
@@ -111,4 +114,14 @@ export function isBrainstormEnhancementsArgs(args: unknown): args is BrainstormE
   const a = args as Record<string, unknown>;
   
   return 'concept' in a && typeof a.concept === 'string';
+}
+
+// Message types for OpenAI/Deepseek chat
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatHistory {
+  messages: ChatMessage[];
 }

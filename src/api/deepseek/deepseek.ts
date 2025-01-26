@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { LLMResponse } from '../../types/index.js';
+import type { LLMResponse, ChatMessage } from '../../types/index.js';
 import { config } from '../../config.js';
 import { sanitizeInput } from '../../utils/prompt.js';
 
@@ -42,7 +42,7 @@ class RateLimiter {
 }
 
 /**
- * Deepseek API client class using OpenAI SDK
+ * Deepseek API client class using OpenAI SDK with deepseek-reasoner model
  */
 class DeepseekClient {
   private readonly client: OpenAI;
@@ -52,8 +52,7 @@ class DeepseekClient {
     this.client = new OpenAI({
       baseURL: config.api.baseUrl || 'https://api.deepseek.com',
       apiKey: config.api.apiKey,
-      defaultQuery: { model: config.api.model || 'deepseek-chat' },
-      defaultHeaders: { 'api-key': config.api.apiKey }
+      defaultQuery: { model: 'deepseek-reasoner' }
     });
 
     this.rateLimiter = new RateLimiter(
@@ -90,11 +89,12 @@ class DeepseekClient {
   }
 
   /**
-   * Makes a call to the Deepseek API
+   * Makes a call to the Deepseek API using the reasoner model
    */
   public async makeApiCall(
     prompt: string,
-    systemPrompt: string = 'You are a helpful AI assistant.'
+    systemPrompt: string = 'You are a helpful AI assistant.',
+    previousMessages: ChatMessage[] = []
   ): Promise<LLMResponse> {
     // Check rate limit
     if (!this.rateLimiter.tryConsume()) {
@@ -110,22 +110,33 @@ class DeepseekClient {
       const sanitizedPrompt = sanitizeInput(prompt);
       const sanitizedSystemPrompt = sanitizeInput(systemPrompt);
 
+      // Prepare messages, filtering out any previous reasoning_content
+      const messages = [
+        { role: 'system' as const, content: sanitizedSystemPrompt },
+        ...previousMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        { role: 'user' as const, content: sanitizedPrompt }
+      ];
+
       const response = await this.retryWithExponentialBackoff(async () => {
         const completion = await this.client.chat.completions.create({
-          messages: [
-            { role: 'system', content: sanitizedSystemPrompt },
-            { role: 'user', content: sanitizedPrompt }
-          ],
-          model: config.api.model || 'deepseek-chat',
-          temperature: 0.7,
-          max_tokens: 2048
+          model: 'deepseek-reasoner',
+          messages,
+          max_tokens: config.api.maxTokens || 4096
         });
 
         return completion;
       });
 
+      // Extract both the reasoning and final content
+      const reasoningContent = (response.choices[0]?.message as any)?.reasoning_content || '';
+      const finalContent = response.choices[0]?.message?.content || '';
+
       return {
-        text: response.choices[0]?.message?.content || '',
+        text: finalContent,
+        reasoning: reasoningContent,
         isError: false,
       };
     } catch (error) {
@@ -158,7 +169,10 @@ class DeepseekClient {
 export const deepseekClient = new DeepseekClient();
 
 // Export the main interface functions
-export const makeDeepseekAPICall = (prompt: string, systemPrompt?: string) => 
-  deepseekClient.makeApiCall(prompt, systemPrompt);
+export const makeDeepseekAPICall = (
+  prompt: string,
+  systemPrompt?: string,
+  previousMessages: ChatMessage[] = []
+) => deepseekClient.makeApiCall(prompt, systemPrompt, previousMessages);
 
 export const checkRateLimit = () => deepseekClient.checkRateLimit();

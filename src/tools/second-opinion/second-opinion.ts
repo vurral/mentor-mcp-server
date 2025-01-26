@@ -6,11 +6,19 @@ import { createPrompt, PromptTemplate } from '../../utils/prompt.js';
  * System prompt for the second opinion tool
  */
 const SYSTEM_PROMPT = `You are an expert mentor providing second opinions on user requests. 
-Your role is to analyze requests and identify critical considerations that might be overlooked. 
-Focus on modern practices, potential pitfalls, and important factors for success.
+Your role is to analyze requests and identify critical considerations that might be overlooked.
 
-Format your response as a clear, non-numbered list of points, focusing on what's most relevant 
-to the specific request. Each point should be concise but informative.`;
+First, reason through the request step by step:
+1. Understand the core request and its implications
+2. Consider the context and domain
+3. Identify potential challenges and pitfalls
+4. Think about prerequisites and dependencies
+5. Evaluate resource requirements
+6. Consider maintenance and scalability
+7. Think about security and performance implications
+
+Then, provide a concise list of critical considerations based on your reasoning.
+Focus on modern practices, potential pitfalls, and important factors for success.`;
 
 /**
  * Prompt template for generating second opinions
@@ -18,18 +26,17 @@ to the specific request. Each point should be concise but informative.`;
 const PROMPT_TEMPLATE: PromptTemplate = {
   template: `User Request: {user_request}
 
-Task: List the critical considerations for this user request:
+Please analyze this request carefully. Consider:
 - Core problem/concept to address
 - Common pitfalls or edge cases
 - Security/performance implications (if applicable)
-- Prerequisites or dependencies
-- Resource constraints and requirements to consider
+- Prerequisites and dependencies
+- Resource constraints and requirements
 - Advanced topics that could add value
 - Maintenance/scalability factors
 
-Reminder: You are not fulfilling the user request, only generating a plain text, non-numbered list of non-obvious points of consideration.
-
-Format: Brief, clear points in plain text. Focus on what's most relevant to the specific request.`,
+First, reason through your analysis step by step.
+Then, provide a clear, non-numbered list of critical considerations.`,
   systemPrompt: SYSTEM_PROMPT
 };
 
@@ -55,9 +62,9 @@ export const definition: ToolDefinition = {
  * Handles the execution of the second opinion tool
  * 
  * @param args - Tool arguments containing the user request
- * @returns Tool response containing the generated second opinion
+ * @returns Tool response containing the generated second opinion with reasoning
  */
-export async function handler(args: SecondOpinionArgs) {
+export async function handler(args: unknown) {
   // Check rate limit first
   if (!checkRateLimit()) {
     return {
@@ -67,13 +74,30 @@ export async function handler(args: SecondOpinionArgs) {
           text: 'Rate limit exceeded. Please try again later.',
         },
       ],
+      isError: true,
     };
   }
 
   try {
-    // Create the complete prompt using the template
+    // Type guard for SecondOpinionArgs
+    if (!args || typeof args !== 'object' || !('user_request' in args) || 
+        typeof args.user_request !== 'string') {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'Missing or invalid user_request parameter.',
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    const typedArgs = args as SecondOpinionArgs;
+
+    // Create the complete prompt
     const prompt = createPrompt(PROMPT_TEMPLATE, {
-      user_request: args.user_request
+      user_request: typedArgs.user_request
     });
 
     // Make the API call
@@ -87,17 +111,27 @@ export async function handler(args: SecondOpinionArgs) {
             text: `Error generating second opinion: ${response.errorMessage || 'Unknown error'}`,
           },
         ],
+        isError: true,
       };
     }
 
-    // Format the response
+    // Return both the reasoning and the final response
     return {
       content: [
         {
           type: 'text',
-          text: `<internal_thoughts>\n${response.text}\n</internal_thoughts>`,
+          text: response.text,
         },
       ],
+      // Include the Chain of Thought reasoning if available
+      ...(response.reasoning ? {
+        reasoning: [
+          {
+            type: 'text',
+            text: `<reasoning>\n${response.reasoning}\n</reasoning>`,
+          },
+        ],
+      } : {}),
     };
   } catch (error) {
     console.error('Second opinion tool error:', error);
@@ -108,6 +142,7 @@ export async function handler(args: SecondOpinionArgs) {
           text: `Error processing request: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
       ],
+      isError: true,
     };
   }
 }
