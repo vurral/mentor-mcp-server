@@ -14,8 +14,8 @@ function requireEnv(name: string): string {
 
 const apiConfig: APIConfig = {
   apiKey: requireEnv('DEEPSEEK_API_KEY'),
-  baseUrl: process.env.DEEPSEEK_API_BASE_URL || 'https://api.deepseek.com/v1',
-  model: process.env.DEEPSEEK_MODEL || 'deepseek-coder',
+  baseUrl: process.env.DEEPSEEK_API_BASE_URL || 'https://api.deepseek.com',
+  model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
   maxRetries: parseInt(process.env.DEEPSEEK_MAX_RETRIES || '3', 10),
   timeout: parseInt(process.env.DEEPSEEK_TIMEOUT || '30000', 10),
 };

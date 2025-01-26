@@ -1,40 +1,7 @@
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import OpenAI from 'openai';
 import type { LLMResponse } from '../../types/index.js';
 import { config } from '../../config.js';
 import { sanitizeInput } from '../../utils/prompt.js';
-
-/**
- * Interface for Deepseek API message format
- */
-interface DeepseekMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-/**
- * Interface for Deepseek API response format
- */
-interface DeepseekResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-    finish_reason?: string;
-  }>;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
-
-/**
- * Interface for API error response
- */
-interface ApiErrorResponse {
-  message?: string;
-  error?: string;
-}
 
 /**
  * Rate limiter implementation using token bucket algorithm
@@ -75,61 +42,24 @@ class RateLimiter {
 }
 
 /**
- * Deepseek API client class
+ * Deepseek API client class using OpenAI SDK
  */
 class DeepseekClient {
-  private readonly axiosInstance: AxiosInstance;
+  private readonly client: OpenAI;
   private readonly rateLimiter: RateLimiter;
 
   constructor() {
-    this.axiosInstance = axios.create({
-      baseURL: config.api.baseUrl,
-      timeout: config.api.timeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.api.apiKey}`,
-      },
+    this.client = new OpenAI({
+      baseURL: config.api.baseUrl || 'https://api.deepseek.com',
+      apiKey: config.api.apiKey,
+      defaultQuery: { model: config.api.model || 'deepseek-chat' },
+      defaultHeaders: { 'api-key': config.api.apiKey }
     });
 
     this.rateLimiter = new RateLimiter(
       50,  // max 50 requests
       10   // refill 10 tokens per second
     );
-
-    // Add response interceptor for error handling
-    this.axiosInstance.interceptors.response.use(
-      response => response,
-      this.handleApiError.bind(this)
-    );
-  }
-
-  /**
-   * Handles API errors and transforms them into appropriate responses
-   */
-  private async handleApiError(error: AxiosError<ApiErrorResponse>): Promise<never> {
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      const status = error.response.status;
-      const message = error.response.data?.message || error.response.data?.error || error.message;
-
-      switch (status) {
-        case 401:
-          throw new Error('Authentication failed: Invalid API key');
-        case 429:
-          throw new Error('Rate limit exceeded. Please try again later.');
-        case 500:
-          throw new Error('Deepseek API server error. Please try again later.');
-        default:
-          throw new Error(`API error: ${message}`);
-      }
-    } else if (error.request) {
-      // The request was made but no response was received
-      throw new Error('No response received from Deepseek API');
-    } else {
-      // Something happened in setting up the request
-      throw new Error(`Error setting up request: ${error.message}`);
-    }
   }
 
   /**
@@ -147,7 +77,7 @@ class DeepseekClient {
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        if (error instanceof AxiosError && error.response?.status === 429) {
+        if (error instanceof OpenAI.APIError && error.status === 429) {
           const delay = baseDelay * Math.pow(2, attempt);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
@@ -180,37 +110,38 @@ class DeepseekClient {
       const sanitizedPrompt = sanitizeInput(prompt);
       const sanitizedSystemPrompt = sanitizeInput(systemPrompt);
 
-      const messages: DeepseekMessage[] = [
-        {
-          role: 'system',
-          content: sanitizedSystemPrompt,
-        },
-        {
-          role: 'user',
-          content: sanitizedPrompt,
-        },
-      ];
-
       const response = await this.retryWithExponentialBackoff(async () => {
-        const result = await this.axiosInstance.post<DeepseekResponse>('/chat/completions', {
-          model: config.api.model,
-          messages,
+        const completion = await this.client.chat.completions.create({
+          messages: [
+            { role: 'system', content: sanitizedSystemPrompt },
+            { role: 'user', content: sanitizedPrompt }
+          ],
+          model: config.api.model || 'deepseek-chat',
           temperature: 0.7,
-          max_tokens: 2048,
+          max_tokens: 2048
         });
-        return result;
+
+        return completion;
       });
 
       return {
-        text: response.data.choices[0].message.content,
+        text: response.choices[0]?.message?.content || '',
         isError: false,
       };
     } catch (error) {
       console.error('Deepseek API error:', error);
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof OpenAI.APIError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       return {
         text: '',
         isError: true,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
+        errorMessage
       };
     }
   }
