@@ -16,15 +16,16 @@ export interface ToolContent {
   text: string;
 }
 
+// Response format for our internal tool handlers
 export interface ToolResponse {
   content: ToolContent[];
-  reasoning?: ToolContent[];  // Added to expose reasoning content
+  reasoning?: ToolContent[];
   isError?: boolean;
 }
 
 export interface LLMResponse {
   text: string;
-  reasoning?: string;  // Added for Chain of Thought content
+  reasoning?: string;
   isError: boolean;
   errorMessage?: string;
 }
@@ -34,9 +35,6 @@ export interface FileValidationResult {
   error?: string;
 }
 
-/**
- * Configuration for the Deepseek API
- */
 export interface APIConfig {
   apiKey: string;
   baseUrl: string;
@@ -127,4 +125,13 @@ export interface ChatMessage {
 
 export interface ChatHistory {
   messages: ChatMessage[];
+}
+
+// Helper function to convert ToolResponse to ServerResult format
+export function toolResponseToServerResult(response: ToolResponse): Record<string, unknown> {
+  return {
+    content: response.content,
+    ...(response.reasoning ? { reasoning: response.reasoning } : {}),
+    ...(response.isError ? { isError: response.isError } : {})
+  };
 }

@@ -18,6 +18,7 @@ import {
   isDesignCritiqueArgs,
   isWritingFeedbackArgs,
   isBrainstormEnhancementsArgs,
+  toolResponseToServerResult,
 } from "./types/index.js";
 
 /**
@@ -75,6 +76,7 @@ class MentorServer {
       const { name, arguments: args } = request.params;
 
       try {
+        let response;
         switch (name) {
           case "second_opinion": {
             if (!args || !('user_request' in args) || typeof args.user_request !== 'string') {
@@ -83,7 +85,8 @@ class MentorServer {
                 "Missing required parameter: user_request"
               );
             }
-            return await secondOpinion.handler({ user_request: args.user_request });
+            response = await secondOpinion.handler({ user_request: args.user_request });
+            break;
           }
 
           case "code_review": {
@@ -93,7 +96,8 @@ class MentorServer {
                 "Invalid parameters for code review"
               );
             }
-            return await codeReview.handler(args);
+            response = await codeReview.handler(args);
+            break;
           }
 
           case "design_critique": {
@@ -103,7 +107,8 @@ class MentorServer {
                 "Invalid parameters for design critique"
               );
             }
-            return await designCritique.handler(args);
+            response = await designCritique.handler(args);
+            break;
           }
 
           case "writing_feedback": {
@@ -113,7 +118,8 @@ class MentorServer {
                 "Invalid parameters for writing feedback"
               );
             }
-            return await writingFeedback.handler(args);
+            response = await writingFeedback.handler(args);
+            break;
           }
 
           case "brainstorm_enhancements": {
@@ -123,7 +129,8 @@ class MentorServer {
                 "Invalid parameters for brainstorm enhancements"
               );
             }
-            return await brainstormEnhancements.handler(args);
+            response = await brainstormEnhancements.handler(args);
+            break;
           }
 
           default:
@@ -132,6 +139,9 @@ class MentorServer {
               `Tool not found: ${name}`
             );
         }
+
+        // Convert tool response to server result format
+        return toolResponseToServerResult(response);
       } catch (error) {
         // Handle errors that aren't already McpErrors
         if (!(error instanceof McpError)) {
