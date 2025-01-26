@@ -9,7 +9,16 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { config } from "./config.js";
 import * as secondOpinion from "./tools/second-opinion/index.js";
-import { isValidToolArgs, SecondOpinionArgs } from "./types/index.js";
+import * as codeReview from "./tools/code-review/index.js";
+import * as designCritique from "./tools/design-critique/index.js";
+import * as writingFeedback from "./tools/writing-feedback/index.js";
+import * as brainstormEnhancements from "./tools/brainstorm-enhancements/index.js";
+import {
+  isCodeReviewArgs,
+  isDesignCritiqueArgs,
+  isWritingFeedbackArgs,
+  isBrainstormEnhancementsArgs,
+} from "./types/index.js";
 
 /**
  * MentorServer class implements an MCP server that provides mentorship and feedback tools.
@@ -44,7 +53,13 @@ class MentorServer {
   private setupRequestHandlers(): void {
     // Register tool listing handler
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [secondOpinion.definition],
+      tools: [
+        secondOpinion.definition,
+        codeReview.definition,
+        designCritique.definition,
+        writingFeedback.definition,
+        brainstormEnhancements.definition,
+      ],
     }));
 
     // Register tool execution handler
@@ -62,27 +77,55 @@ class MentorServer {
       try {
         switch (name) {
           case "second_opinion": {
-            if (!args || !isValidToolArgs(args, ["user_request"])) {
+            if (!args || !('user_request' in args) || typeof args.user_request !== 'string') {
               throw new McpError(
                 ErrorCode.InvalidParams,
                 "Missing required parameter: user_request"
               );
             }
-            
-            const userRequest = args.user_request;
-            if (typeof userRequest !== 'string') {
+            return await secondOpinion.handler({ user_request: args.user_request });
+          }
+
+          case "code_review": {
+            if (!isCodeReviewArgs(args)) {
               throw new McpError(
                 ErrorCode.InvalidParams,
-                "Parameter 'user_request' must be a string"
+                "Invalid parameters for code review"
               );
             }
-            
-            const toolArgs: SecondOpinionArgs = {
-              user_request: userRequest
-            };
-            
-            return await secondOpinion.handler(toolArgs);
+            return await codeReview.handler(args);
           }
+
+          case "design_critique": {
+            if (!isDesignCritiqueArgs(args)) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                "Invalid parameters for design critique"
+              );
+            }
+            return await designCritique.handler(args);
+          }
+
+          case "writing_feedback": {
+            if (!isWritingFeedbackArgs(args)) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                "Invalid parameters for writing feedback"
+              );
+            }
+            return await writingFeedback.handler(args);
+          }
+
+          case "brainstorm_enhancements": {
+            if (!isBrainstormEnhancementsArgs(args)) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                "Invalid parameters for brainstorm enhancements"
+              );
+            }
+            return await brainstormEnhancements.handler(args);
+          }
+
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
