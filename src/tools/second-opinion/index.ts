@@ -1,0 +1,1 @@
+export { definition, handler } from './second-opinion.js';

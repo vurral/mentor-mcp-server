@@ -1,0 +1,24 @@
+{
+  "name": "mentor-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server that provides insightful feedback and guidance on various types of user requests",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc && chmod +x build/index.js",
+    "start": "node build/index.js",
+    "dev": "tsc -w",
+    "clean": "rm -rf build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["mcp", "mentor", "feedback", "llm"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.4.1",
+    "@types/node": "^22.10.10",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.7.3"
+  }
+}
