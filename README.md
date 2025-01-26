@@ -23,6 +23,7 @@ The Model Context Protocol (MCP) enables communication between:
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Tools](#tools)
+- [Examples](#examples)
 - [Development](#development)
 - [Project Structure](#project-structure)
 - [License](#license)
@@ -159,6 +160,18 @@ Add to your MCP client settings:
 </arguments>
 </use_mcp_tool>
 ```
+
+## Examples
+
+Detailed examples of each tool's usage and output can be found in the [examples](examples) directory:
+
+- [Second Opinion Example](examples/second-opinion.md) - Analysis of authentication system requirements
+- [Code Review Example](examples/code-review.md) - Detailed TypeScript code review with security and performance insights
+- [Design Critique Example](examples/design-critique.md) - Comprehensive UI/UX feedback for a dashboard design
+- [Writing Feedback Example](examples/writing-feedback.md) - Documentation improvement suggestions
+- [Brainstorm Enhancements Example](examples/brainstorm-enhancements.md) - Feature ideation with implementation details
+
+Each example includes the request format and sample response, demonstrating the tool's capabilities and output structure.
 
 ## Development
 

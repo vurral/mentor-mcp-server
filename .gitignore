@@ -37,12 +37,11 @@ yarn.lock
 # Demo and Example Directories
 demo/
 demos/
-example/
-examples/
 samples/
 .sample-env
 sample.*
 !sample.template.*
+!examples/  # Allow examples directory for tool documentation
 
 # Node.js
 node_modules/
