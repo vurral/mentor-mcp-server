@@ -7,9 +7,7 @@
 [![Status](https://img.shields.io/badge/Status-Stable-blue.svg)]()
 [![GitHub](https://img.shields.io/github/stars/cyanheads/mentor-mcp-server?style=social)](https://github.com/cyanheads/mentor-mcp-server)
 
-A Model Context Protocol server providing LLM Agents with AI-powered mentorship capabilities, including code review, design critique, writing feedback, and feature enhancement brainstorming through the Deepseek API.
-
-`#mcp` `#llm` `#ai` `#mentorship` `#code-review` `#design` `#feedback` `#typescript`
+A Model Context Protocol server providing LLM Agents a second opinion via AI-powered Deepseek-Reasoning R1 mentorship capabilities, including code review, design critique, writing feedback, and idea brainstorming through the Deepseek API. 
 
 ## Model Context Protocol
 
