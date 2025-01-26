@@ -34,13 +34,16 @@ export interface FileValidationResult {
   error?: string;
 }
 
+/**
+ * Configuration for the Deepseek API
+ */
 export interface APIConfig {
   apiKey: string;
   baseUrl: string;
   model: string;
   maxRetries: number;
   timeout: number;
-  maxTokens?: number;  // Added for deepseek-reasoner max_tokens parameter
+  maxTokens: number;
 }
 
 export interface ServerConfig {
