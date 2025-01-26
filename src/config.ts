@@ -7,7 +7,7 @@ const apiConfig: APIConfig = {
   model: process.env.DEEPSEEK_MODEL || 'deepseek-reasoner',
   maxRetries: parseInt(process.env.DEEPSEEK_MAX_RETRIES || '3', 10),
   timeout: parseInt(process.env.DEEPSEEK_TIMEOUT || '30000', 10),
-  maxTokens: parseInt(process.env.DEEPSEEK_MAX_TOKENS || '4096', 10),
+  maxTokens: parseInt(process.env.DEEPSEEK_MAX_TOKENS || '8192', 10),
 };
 
 // Validate required configuration
