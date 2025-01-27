@@ -1,5 +1,5 @@
 import type { ToolDefinition, SecondOpinionArgs } from '../../types/index.js';
-import { makeDeepseekAPICall, checkRateLimit } from '../../api/deepseek/deepseek.js';
+import { makeApiCall, checkRateLimit } from '../../api/openrouter/index.js';
 import { createPrompt, PromptTemplate } from '../../utils/prompt.js';
 
 /**
@@ -101,7 +101,7 @@ export async function handler(args: unknown) {
     });
 
     // Make the API call
-    const response = await makeDeepseekAPICall(prompt, SYSTEM_PROMPT);
+    const response = await makeApiCall(prompt, SYSTEM_PROMPT);
 
     if (response.isError) {
       return {

@@ -1,5 +1,5 @@
 import type { ToolDefinition, WritingFeedbackArgs, ToolResponse } from '../../types/index.js';
-import { makeDeepseekAPICall, checkRateLimit } from '../../api/deepseek/deepseek.js';
+import { makeApiCall, checkRateLimit } from '../../api/openrouter/index.js';
 import { createPrompt, PromptTemplate, sanitizeInput } from '../../utils/prompt.js';
 
 /**
@@ -194,7 +194,7 @@ export async function handler(args: unknown): Promise<ToolResponse> {
     );
 
     // Make the API call
-    const response = await makeDeepseekAPICall(prompt, SYSTEM_PROMPT);
+    const response = await makeApiCall(prompt, SYSTEM_PROMPT);
 
     if (response.isError) {
       return {
